@@ -70,10 +70,9 @@ class WorkerThread : public Thread {
    * The epoll handler
    */
   PinkEpoll *pink_epoll_;
+	void* (*call_hook_)(void* arg);
 
   virtual void *ThreadMain() override;
-
-	void* (*call_hook_)(void* arg);
 
   // clean conns
   void Cleanup();

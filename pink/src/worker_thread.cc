@@ -7,7 +7,7 @@
 
 namespace pink {
 
-WorkerThread::WorkerThread(ConnFactory *conn_factory, int cron_interval, void* (call_hook)(void* arg)) :
+WorkerThread::WorkerThread(ConnFactory *conn_factory, int cron_interval, void* (*call_hook)(void* arg)) :
   conn_factory_(conn_factory),
   cron_interval_(cron_interval),
 	call_hook_(call_hook) {
@@ -80,7 +80,7 @@ void *WorkerThread::ThreadMain() {
           }
           pink_epoll_->PinkAddEvent(ti.fd(), EPOLLIN);
 					if (call_hook_) {
-						call_hook_(tc);
+						call_hook_(this);
 					}
         } else {
           continue;
