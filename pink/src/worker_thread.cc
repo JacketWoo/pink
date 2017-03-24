@@ -153,7 +153,7 @@ void WorkerThread::Cleanup() {
 }
 
 extern Thread *NewWorkerThread(ConnFactory *conn_factory, int cron_interval, void* (call_hook)(void* arg)) {
-  return new WorkerThread(conn_factory, cron_interval);
+  return new WorkerThread(conn_factory, cron_interval, call_hook);
 }
 
 };
