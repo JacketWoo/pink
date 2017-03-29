@@ -79,8 +79,9 @@ void *WorkerThread::ThreadMain() {
             conns_[ti.fd()] = tc;
           }
           pink_epoll_->PinkAddEvent(ti.fd(), EPOLLIN);
-					if (call_hook_) {
-						call_hook_(this);
+					if (call_hook_ && !call_hook_(tc)) {
+						close(ti.fd());
+						delete tc;
 					}
         } else {
           continue;
