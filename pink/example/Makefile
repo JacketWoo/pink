@@ -6,7 +6,7 @@ else
 	# CXXFLAGS = -Wall -W -DDEBUG -g -O0 -D__XDEBUG__ 
 endif
 # OBJECT = holy_srv myproto_cli pika pika_holy bg_thread http_server
-OBJECT = holy_srv dispatch_srv myproto_cli
+OBJECT = holy_srv holy_srv_chandle dispatch_srv myproto_cli
 
 ifndef SLASH_PATH
 SLASH_PATH = ../third/slash
@@ -48,6 +48,9 @@ all: $(OBJECT)
 holy_srv: myholy_srv.cc myproto.pb.cc
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
 
+holy_srv_chandle: myholy_srv_chandle.cc myproto.pb.cc
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
+
 dispatch_srv: mydispatch_srv.cc myproto.pb.cc
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
 myproto_cli: myproto_cli.cc myproto.pb.cc
@@ -57,10 +60,10 @@ myproto_cli: myproto_cli.cc myproto.pb.cc
 
 # pika: pika.cc pika_thread.cc
 #   $(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
-
+# 
 # pika_holy: pika_holy.cc pika_holy_thread.cc
 #   $(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
-
+# 
 # redis_cli: redis_cli_test.cc
 #   $(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
 
