@@ -39,12 +39,14 @@ class BGThread : public Thread {
     }
 
   virtual ~BGThread() {
-    if (running()) {
-      set_running(false);
-      rsignal_.Signal();
-      wsignal_.Signal();
-    }
-    JoinThread();
+    StopThread();
+  }
+
+  virtual int StopThread() override {
+    should_stop_ = true;
+    rsignal_.Signal();
+    wsignal_.Signal();
+    return Thread::StopThread();
   }
 
   void Schedule(void (*function)(void*), void* arg);

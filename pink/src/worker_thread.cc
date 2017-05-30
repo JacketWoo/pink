@@ -50,7 +50,7 @@ void *WorkerThread::ThreadMain() {
     timeout = PINK_CRON_INTERVAL;
   }
 
-  while (running()) {
+  while (!should_stop()) {
 
     if (cron_interval_ > 0) {
       gettimeofday(&now, NULL);
@@ -89,11 +89,10 @@ void *WorkerThread::ThreadMain() {
       } else {
         in_conn = NULL;
         int should_close = 0;
-        std::map<int, PinkConn *>::iterator iter = conns_.begin();
         if (pfe == NULL) {
           continue;
         }
-        iter = conns_.find(pfe->fd);
+        std::map<int, PinkConn *>::iterator iter = conns_.find(pfe->fd);
         if (iter == conns_.end()) {
           pink_epoll_->PinkDelEvent(pfe->fd);
           continue;
@@ -139,7 +138,7 @@ void *WorkerThread::ThreadMain() {
 		if (ehandle()) {
 			ehandle()->Sanitize(get_private());
 		}
-  } // while (running())
+  } // while (!should_stop())
 
   Cleanup();
   return NULL;
@@ -171,6 +170,7 @@ void WorkerThread::Cleanup() {
     in_conn = iter->second;
     delete in_conn;
   }
+  conns_.clear();
 }
 
 };  // namespace pink

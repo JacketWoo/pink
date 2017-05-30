@@ -9,6 +9,7 @@
 #include <string>
 #include <atomic>
 #include <pthread.h>
+#include "slash/include/slash_mutex.h"
 
 namespace pink {
 
@@ -33,13 +34,10 @@ class Thread {
   virtual int StopThread();
   int JoinThread();
 
-  bool running() const {
-    return running_.load();
+  bool should_stop() {
+    return should_stop_.load();
   }
 
-  void set_running(bool running) {
-    running_.store(running);
-  }
 
   pthread_t thread_id() const {
     return thread_id_;
@@ -64,12 +62,16 @@ class Thread {
   void* get_private() {
     return private_;
   }
+  
+ protected:
+  std::atomic<bool> should_stop_;
 
  private:
   static void* RunThread(void* arg);
   virtual void *ThreadMain() = 0; 
 
-  std::atomic<bool> running_;
+  slash::Mutex running_mu_;
+  bool running_;
   pthread_t thread_id_;
   std::string thread_name_;
 
