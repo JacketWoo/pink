@@ -21,6 +21,7 @@ class ThreadEnvHandle {
 
   // Saved in thread's private_
   virtual int SetEnv(void** env) const = 0;
+	virtual void Sanitize(void* env) const = 0;
 };
 
 class Thread {
@@ -47,6 +48,10 @@ class Thread {
   std::string thread_name() const {
     return thread_name_;
   }
+
+	const ThreadEnvHandle* ehandle() {
+		return ehandle_;
+	}
 
   void set_thread_name(const std::string& name) {
     thread_name_ = name;

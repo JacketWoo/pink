@@ -136,6 +136,9 @@ void *WorkerThread::ThreadMain() {
         }
       } // connection event
     } // for (int i = 0; i < nfds; i++)
+		if (ehandle()) {
+			ehandle()->Sanitize(get_private());
+		}
   } // while (running())
 
   Cleanup();
