@@ -70,19 +70,39 @@ void *WorkerThread::ThreadMain() {
       pfe = (pink_epoll_->firedevent()) + i;
       if (pfe->fd == notify_receive_fd_) {
         if (pfe->mask & EPOLLIN) {
-          read(notify_receive_fd_, bb, 1);
-          {
-            slash::MutexLock l(&mutex_);
-            ti = conn_queue_.front();
-            conn_queue_.pop();
+          //read(notify_receive_fd_, bb, 1);
+          //{
+          //  slash::MutexLock l(&mutex_);
+          //  ti = conn_queue_.front();
+          //  conn_queue_.pop();
+          //}
+          //PinkConn *tc = conn_factory_->NewPinkConn(ti.fd(), ti.ip_port(), this);
+          //tc->SetNonblock();
+          //{
+          //  slash::RWLock l(&rwlock_, true);
+          //  conns_[ti.fd()] = tc;
+          //}
+          //pink_epoll_->PinkAddEvent(ti.fd(), EPOLLIN);
+          
+          char tmp[2048];
+          int32_t nread = read(notify_receive_fd_, tmp, 2048);
+          if (nread <= 0) {
+            continue;
           }
-          PinkConn *tc = conn_factory_->NewPinkConn(ti.fd(), ti.ip_port(), this);
-          tc->SetNonblock();
-          {
-            slash::RWLock l(&rwlock_, true);
-            conns_[ti.fd()] = tc;
+          for (int32_t idx = 0; idx != nread; ++idx) {
+            {
+              slash::MutexLock l(&mutex_);
+              ti = conn_queue_.front();
+              conn_queue_.pop();
+            }
+            PinkConn *tc = conn_factory_->NewPinkConn(ti.fd(), ti.ip_port(), this);
+            tc->SetNonblock();
+            {
+              slash::RWLock l(&rwlock_, true);
+              conns_[ti.fd()] = tc;
+            }
+            pink_epoll_->PinkAddEvent(ti.fd(), EPOLLIN);
           }
-          pink_epoll_->PinkAddEvent(ti.fd(), EPOLLIN);
         } else {
           continue;
         }
