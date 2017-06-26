@@ -174,7 +174,7 @@ void WorkerThread::DoCronTask() {
   slash::RWLock l(&rwlock_, true);
   std::map<int, PinkConn*>::iterator iter = conns_.begin();
   while (iter != conns_.end()) {
-    if (now.tv_sec - iter->second->last_interaction().tv_sec > keepalive_timeout_) {
+    if (now.tv_sec - iter->second->last_interaction().tv_sec > iter->second->keepalive_timeout()) {
       close(iter->first);
       delete iter->second;
       iter = conns_.erase(iter);

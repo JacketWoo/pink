@@ -25,6 +25,9 @@ public:
 
   virtual ReadStatus GetRequest() = 0;
   virtual WriteStatus SendReply() = 0;
+  virtual uint32_t keepalive_timeout() {
+    return static_cast<uint32_t>(-1);
+  }
 
   int flags() const { 
     return flags_; 
@@ -54,7 +57,7 @@ public:
 
   struct timeval last_interaction() const {
     return last_interaction_;
-  };
+  }
 
   Thread *thread() const {
     return thread_;
