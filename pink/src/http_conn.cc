@@ -128,7 +128,7 @@ bool HttpRequest::ParseHeadLine(const char* data, int line_start,
 
 bool HttpRequest::ParseGetUrl() {
   // Format path
-  if (path.find(headers["host"]) != std::string::npos &&
+  if (!headers["host"].empty() && path.find(headers["host"]) != std::string::npos &&
       path.size() > (7 + headers["host"].size())) {
     // http://www.xxx.xxx/path/to
     path.assign(path.substr(7 + headers["host"].size()));
@@ -214,7 +214,8 @@ bool HttpRequest::ParseHeadFromArray(const char* data, const int size) {
 bool HttpRequest::ParseBodyFromArray(const char* data, const int size) {
   content.append(data, size);
   if (method == "POST" &&
-      headers["content-type"] == "application/x-www-form-urlencoded") {
+      (headers["content-type"] == "application/x-www-form-urlencoded"
+       || headers["content-type"].empty())) {
     return ParseParameters(content, 0, false);
   }
   return true;
