@@ -28,6 +28,12 @@ public:
   virtual uint32_t keepalive_timeout() {
     return static_cast<uint32_t>(-1);
   }
+  /*
+   * three return value, 0-->nothing, -1-->to deleted, 1-->need write
+   */
+  virtual int32_t DoCron(const timeval& now) {
+    return 0;
+  }
 
   int flags() const { 
     return flags_; 

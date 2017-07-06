@@ -174,11 +174,14 @@ void WorkerThread::DoCronTask() {
   slash::RWLock l(&rwlock_, true);
   std::map<int, PinkConn*>::iterator iter = conns_.begin();
   while (iter != conns_.end()) {
-    if (now.tv_sec - iter->second->last_interaction().tv_sec > iter->second->keepalive_timeout()) {
+    int32_t r = iter->second->DoCron(now);
+    if (r == -1) { 
       close(iter->first);
       delete iter->second;
       iter = conns_.erase(iter);
       continue;
+    } else if (r == 1) {
+      pink_epoll_->PinkModEvent(iter->second->fd(), EPOLLIN, EPOLLOUT);
     }
     ++iter;
   }
