@@ -13,6 +13,7 @@
 #include <queue>
 #include <map>
 #include <atomic>
+#include <memory>
 
 #include <google/protobuf/message.h>
 
@@ -67,7 +68,7 @@ class WorkerThread : public Thread {
    *  public for external statistics
    */
   pthread_rwlock_t rwlock_;
-  std::map<int, PinkConn*> conns_;
+  std::map<int, std::shared_ptr<PinkConn> > conns_;
 
 
  private:

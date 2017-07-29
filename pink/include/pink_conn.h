@@ -34,6 +34,9 @@ public:
   virtual int32_t DoCron(const timeval& now) {
     return 0;
   }
+  virtual int32_t Cleanup() {
+    return 0;
+  }
 
   int flags() const { 
     return flags_; 

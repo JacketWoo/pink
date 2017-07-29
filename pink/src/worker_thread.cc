@@ -37,7 +37,7 @@ void *WorkerThread::ThreadMain() {
   PinkFiredEvent *pfe = NULL;
   char bb[1];
   PinkItem ti;
-  PinkConn *in_conn = NULL;
+  PinkConn* in_conn = NULL;
 
   struct timeval when;
   gettimeofday(&when, NULL);
@@ -99,7 +99,7 @@ void *WorkerThread::ThreadMain() {
             tc->SetNonblock();
             {
               slash::RWLock l(&rwlock_, true);
-              conns_[ti.fd()] = tc;
+              conns_[ti.fd()].reset(tc);
             }
             pink_epoll_->PinkAddEvent(ti.fd(), EPOLLIN);
           }
@@ -112,13 +112,13 @@ void *WorkerThread::ThreadMain() {
         if (pfe == NULL) {
           continue;
         }
-        std::map<int, PinkConn *>::iterator iter = conns_.find(pfe->fd);
+        std::map<int, std::shared_ptr<PinkConn> >::iterator iter = conns_.find(pfe->fd);
         if (iter == conns_.end()) {
           pink_epoll_->PinkDelEvent(pfe->fd);
           continue;
         }
 
-        in_conn = iter->second;
+        in_conn = iter->second.get();
         if (pfe->mask & EPOLLIN) {
           ReadStatus getRes = in_conn->GetRequest();
           in_conn->set_last_interaction(now);
@@ -147,7 +147,7 @@ void *WorkerThread::ThreadMain() {
             slash::RWLock l(&rwlock_, true);
             pink_epoll_->PinkDelEvent(pfe->fd);
             close(pfe->fd);
-            delete(in_conn);
+            in_conn->Cleanup();
             in_conn = NULL;
 
             conns_.erase(pfe->fd);
@@ -172,12 +172,11 @@ void WorkerThread::DoCronTask() {
   struct timeval now;
   gettimeofday(&now, NULL);
   slash::RWLock l(&rwlock_, true);
-  std::map<int, PinkConn*>::iterator iter = conns_.begin();
+  std::map<int, std::shared_ptr<PinkConn> >::iterator iter = conns_.begin();
   while (iter != conns_.end()) {
     int32_t r = iter->second->DoCron(now);
     if (r == -1) { 
       close(iter->first);
-      delete iter->second;
       iter = conns_.erase(iter);
       continue;
     } else if (r == 1) {
@@ -189,14 +188,11 @@ void WorkerThread::DoCronTask() {
 
 void WorkerThread::Cleanup() {
   slash::RWLock l(&rwlock_, true);
-  PinkConn *in_conn;
-  std::map<int, PinkConn *>::iterator iter = conns_.begin();
-  for (; iter != conns_.end(); iter++) {
+  std::map<int, std::shared_ptr<PinkConn> >::iterator iter = conns_.begin();
+  for (; iter != conns_.end();) {
     close(iter->first);
-    in_conn = iter->second;
-    delete in_conn;
+    iter = conns_.erase(iter);
   }
-  conns_.clear();
 }
 
 };  // namespace pink
