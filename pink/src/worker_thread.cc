@@ -112,11 +112,17 @@ void *WorkerThread::ThreadMain() {
         if (pfe == NULL) {
           continue;
         }
+        pthread_rwlock_rdlock(&rwlock_);
         std::map<int, std::shared_ptr<PinkConn> >::iterator iter = conns_.find(pfe->fd);
         if (iter == conns_.end()) {
+          pthread_rwlock_unlock(&rwlock_);
           pink_epoll_->PinkDelEvent(pfe->fd);
           continue;
         }
+        pthread_rwlock_unlock(&rwlock_);
+
+
+
 
         in_conn = iter->second.get();
         if (pfe->mask & EPOLLIN) {
