@@ -37,7 +37,7 @@ void *WorkerThread::ThreadMain() {
   PinkFiredEvent *pfe = NULL;
   char bb[1];
   PinkItem ti;
-  PinkConn* in_conn = NULL;
+  std::shared_ptr<PinkConn> in_conn;
 
   struct timeval when;
   gettimeofday(&when, NULL);
@@ -107,7 +107,7 @@ void *WorkerThread::ThreadMain() {
           continue;
         }
       } else {
-        in_conn = NULL;
+        in_conn.reset();
         int should_close = 0;
         if (pfe == NULL) {
           continue;
@@ -124,7 +124,7 @@ void *WorkerThread::ThreadMain() {
 
 
 
-        in_conn = iter->second.get();
+        in_conn = iter->second;
         if (pfe->mask & EPOLLIN) {
           ReadStatus getRes = in_conn->GetRequest();
           in_conn->set_last_interaction(now);
@@ -150,13 +150,14 @@ void *WorkerThread::ThreadMain() {
         }
         if ((pfe->mask & EPOLLERR) || (pfe->mask & EPOLLHUP) || should_close) {
           {
-            slash::RWLock l(&rwlock_, true);
             pink_epoll_->PinkDelEvent(pfe->fd);
             close(pfe->fd);
             in_conn->Cleanup();
-            in_conn = NULL;
-
-            conns_.erase(pfe->fd);
+            {
+              slash::RWLock l(&rwlock_, true);
+              conns_.erase(pfe->fd);
+            }
+            in_conn.reset();
           }
         }
       } // connection event
