@@ -125,8 +125,10 @@ void *WorkerThread::ThreadMain() {
 
 
         in_conn = iter->second;
+        ReadStatus my_add;
         if (pfe->mask & EPOLLIN) {
           ReadStatus getRes = in_conn->GetRequest();
+          my_add = getRes;
           in_conn->set_last_interaction(now);
           if (getRes != kReadAll && getRes != kReadHalf) {
             // kReadError kReadClose kFullError kParseError
@@ -149,16 +151,14 @@ void *WorkerThread::ThreadMain() {
           }
         }
         if ((pfe->mask & EPOLLERR) || (pfe->mask & EPOLLHUP) || should_close) {
+          pink_epoll_->PinkDelEvent(pfe->fd);
+          close(pfe->fd);
+          in_conn->Cleanup();
           {
-            pink_epoll_->PinkDelEvent(pfe->fd);
-            close(pfe->fd);
-            in_conn->Cleanup();
-            {
-              slash::RWLock l(&rwlock_, true);
-              conns_.erase(pfe->fd);
-            }
-            in_conn.reset();
+            slash::RWLock l(&rwlock_, true);
+            conns_.erase(pfe->fd);
           }
+          in_conn.reset();
         }
       } // connection event
     } // for (int i = 0; i < nfds; i++)
@@ -178,27 +178,43 @@ void WorkerThread::DoCronTask() {
   // Check keepalive timeout connection
   struct timeval now;
   gettimeofday(&now, NULL);
-  slash::RWLock l(&rwlock_, true);
-  std::map<int, std::shared_ptr<PinkConn> >::iterator iter = conns_.begin();
-  while (iter != conns_.end()) {
-    int32_t r = iter->second->DoCron(now);
-    if (r == -1) { 
-      close(iter->first);
-      iter = conns_.erase(iter);
-      continue;
-    } else if (r == 1) {
-      pink_epoll_->PinkModEvent(iter->second->fd(), EPOLLIN, EPOLLOUT);
+  std::vector<std::shared_ptr<PinkConn> > to_cleanup;
+
+  {
+    slash::RWLock l(&rwlock_, true);
+    std::map<int, std::shared_ptr<PinkConn> >::iterator iter = conns_.begin();
+    while (iter != conns_.end()) {
+      int32_t r = iter->second->DoCron(now);
+      if (r == -1) {
+        pink_epoll_->PinkDelEvent(iter->second->fd());
+        close(iter->first);
+        to_cleanup.push_back(iter->second);
+        iter = conns_.erase(iter);
+        continue;
+      } else if (r == 1) {
+        pink_epoll_->PinkModEvent(iter->second->fd(), EPOLLIN, EPOLLOUT);
+      }
+      ++iter;
     }
-    ++iter;
+  }
+  for (std::shared_ptr<PinkConn>& item : to_cleanup) {
+    item->Cleanup();
   }
 }
 
 void WorkerThread::Cleanup() {
-  slash::RWLock l(&rwlock_, true);
   std::map<int, std::shared_ptr<PinkConn> >::iterator iter = conns_.begin();
-  for (; iter != conns_.end();) {
-    close(iter->first);
-    iter = conns_.erase(iter);
+  std::vector<std::shared_ptr<PinkConn> > to_cleanup;
+  {
+    slash::RWLock l(&rwlock_, true);
+    for (; iter != conns_.end();) {
+      close(iter->first);
+      to_cleanup.push_back(iter->second);
+      iter = conns_.erase(iter);
+    }
+  }
+  for (std::shared_ptr<PinkConn>& item : to_cleanup) {
+    item->Cleanup();
   }
 }
 
