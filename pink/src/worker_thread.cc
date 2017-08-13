@@ -153,7 +153,21 @@ void *WorkerThread::ThreadMain() {
         if ((pfe->mask & EPOLLERR) || (pfe->mask & EPOLLHUP) || should_close) {
           pink_epoll_->PinkDelEvent(pfe->fd);
           close(pfe->fd);
-          in_conn->Cleanup();
+          std::string info;
+          if (pfe->mask & EPOLLERR) {
+            info.append("EPOLLERR ");
+          }
+          if (pfe->mask & EPOLLHUP) {
+            info.append("EPOLLHUP ");
+          }
+          if (should_close) {
+            if (pfe->mask & EPOLLIN) {
+              info.append("In error");
+            } else {
+              info.append("Out error");
+            } 
+          }
+          in_conn->Cleanup(info);
           {
             slash::RWLock l(&rwlock_, true);
             conns_.erase(pfe->fd);
@@ -198,7 +212,7 @@ void WorkerThread::DoCronTask() {
     }
   }
   for (std::shared_ptr<PinkConn>& item : to_cleanup) {
-    item->Cleanup();
+    item->Cleanup("Heartbeat timeout");
   }
 }
 

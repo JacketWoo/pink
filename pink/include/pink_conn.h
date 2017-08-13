@@ -34,7 +34,7 @@ public:
   virtual int32_t DoCron(const timeval& now) {
     return 0;
   }
-  virtual int32_t Cleanup() {
+  virtual int32_t Cleanup(const std::string& info = "") {
     return 0;
   }
 
