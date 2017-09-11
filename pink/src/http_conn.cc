@@ -377,11 +377,15 @@ ReadStatus HttpConn::GetRequest() {
           std::string sign = request_->headers.count("expect") ?
             request_->headers.at("expect") : "";
           if (sign == "100-continue" || sign == "100-Continue") {
+            conn_status_ = kPacket;
+            if (remain_packet_len_ == -1) {
+              remain_packet_len_ = 0;
+              break;
+            }
             // Reply 100 Continue, then receive body
             response_->Clear();
             response_->SetStatusCode(100);
             set_is_reply(true);
-            conn_status_ = kPacket;
             if (remain_packet_len_ > 0)
               return kReadHalf;
           }
