@@ -123,10 +123,9 @@ void *WorkerThread::ThreadMain() {
 
 
         in_conn = iter->second;
-        ReadStatus my_add;
+        ReadStatus getRes;
         if (pfe->mask & EPOLLIN) {
-          ReadStatus getRes = in_conn->GetRequest();
-          my_add = getRes;
+          getRes = in_conn->GetRequest();
           in_conn->set_last_interaction(now);
           if (getRes != kReadAll && getRes != kReadHalf) {
             // kReadError kReadClose kFullError kParseError
@@ -158,7 +157,11 @@ void *WorkerThread::ThreadMain() {
           }
           if (should_close) {
             if (pfe->mask & EPOLLIN) {
-              info.append("In error");
+              if (getRes == kReadClose) {
+                info.append("In close");
+              } else {
+                info.append("In error");
+              }
             } else {
               info.append("Out error");
             } 
