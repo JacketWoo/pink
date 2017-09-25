@@ -137,7 +137,7 @@ void *WorkerThread::ThreadMain() {
             continue;
           }
         }
-        if (pfe->mask & EPOLLOUT) {
+        if (!should_close && pfe->mask & EPOLLOUT) {
           WriteStatus write_status = in_conn->SendReply();
           if (write_status == kWriteAll) {
             in_conn->set_is_reply(false);
