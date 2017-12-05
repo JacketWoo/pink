@@ -214,7 +214,7 @@ bool HttpRequest::ParseHeadFromArray(const char* data, const int size) {
 bool HttpRequest::ParseBodyFromArray(const char* data, const int size) {
   content.append(data, size);
   if (method == "POST" &&
-      (headers["content-type"] == "application/x-www-form-urlencoded"
+      (!strncasecmp(headers["content-type"].data(), "application/x-www-form-urlencoded", 33)
        || headers["content-type"].empty())) {
     return ParseParameters(content, 0, false);
   }
